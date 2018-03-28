@@ -33,6 +33,9 @@ class IdentityNode{
     getSKHex(){
         return this.key.keyPair.d.toBuffer(32).toString('hex')
     }
+    getHex(){
+      return this.key.keyPair.d.toHex() + '01'
+    }
 }
 
 
@@ -77,7 +80,7 @@ function toAddress(k){
 }
 
 function toPrivkeyHex(k){
-  return k.key.keyPair.d.toHex() + '01'
+  return k.keyPair.d.toHex() + '01'
 }
 
 function getIdentityKeyPre09(mnemonic) {
@@ -116,3 +119,4 @@ exports.toPrivkeyHex = toPrivkeyHex
 exports.getBTC = getBTC
 exports.toAddress = toAddress
 exports.generateTriplet = generateTriplet
+exports.toPrivkeyHex = toPrivkeyHex

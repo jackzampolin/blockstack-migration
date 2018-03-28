@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bip39": "^2.5.0",
+    "bitcoinjs-lib": "^3.3.2",
     "blockstack": "^0.17.1",
     "blockstack-keychains": "0.0.8",
     "commander": "^2.15.1"

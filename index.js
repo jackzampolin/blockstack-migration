@@ -76,16 +76,72 @@ program
       console.log("Get this by calling 'blockstack-migration phraseVersion'")
       return
     }
-    var paymentKeyHex = bsk.getBTC(bsk.getMaster(env.phrase)).keyPair.d.toHex()
+    var paymentKeyHex = bsk.toPrivkeyHex(bsk.getBTC(bsk.getMaster(env.phrase)))
     var ownerKey = bsk.getIdentityNodeFromPhrase(env.phrase, `${env.phraseVersion}`, parseInt(env.index))
     var zonefile = `$ORIGIN ${env.name}
 $TTL 3600
 _https._tcp URI 10 1 "https://gaia.blockstack.org/hub/${ownerKey.getAddress()}/profile.json"
 `
 
-    blockstack.transactions.makeUpdate(env.name, ownerKey.getSKHex(), paymentKeyHex, zonefile)
+    blockstack.transactions.makeUpdate(env.name, ownerKey.getHex(), paymentKeyHex, zonefile)
     .then(transaction => {
-      console.log(transaction)
+      console.log("updating zonefile to:")
+      console.log(zonefile)
+      return blockstack.config.network.broadcastTransaction(transaction)
+    }).catch((err) => {
+      console.log(err)
+      return
+    }).then(txhash => {
+      console.log(`Watch transaction https://explorer.blockstack.org/tx/${txhash}`)
+      return blockstack.config.network.broadcastZoneFile(zonefile, txhash)
+    })
+    .then(() => {
+      console.log('done')
+    })
+  });
+  
+program
+  .command('renewName')
+  .description('this command takes all the inputs necessary to renew your name. It is also used for transfering')
+  .option("-p, --phrase [mnemonic]", "your blockstack mnemonic")
+  .option("-i, --index [index]", "browser index for identity")
+  .option("-n, --name [name]", "name at that browser index")
+  .option("-d, --dest [dest]", "destination address for identity")
+  .option("-v, --phraseVersion [version]", "version derived from calling phraseVersion with your mnemonic")
+  .action(function(env, options){
+    if (!env.phrase) {
+      console.log("Need to input phrase (-p or --phrase)")
+      return
+    }
+    if (!env.index) {
+      console.log("Need to input index of name to update (-i or --index)")
+      return
+    }
+    if (!env.name) {
+      console.log("Need to input name to update (-n or --name)")
+      return
+    }
+    if (!env.dest) {
+      console.log("Need to input destination address to update (-d or --dest)")
+      console.log("Choose an open identity address from your browser")
+      return
+    }
+    if (!env.phraseVersion) {
+      console.log("Need to input phrase version (-v or --phraseVersion)")
+      console.log("Get this by calling 'blockstack-migration phraseVersion'")
+      return
+    }
+    var paymentKeyHex = bsk.toPrivkeyHex(bsk.getBTC(bsk.getMaster(env.phrase)))
+    var ownerKey = bsk.getIdentityNodeFromPhrase(env.phrase, `${env.phraseVersion}`, parseInt(env.index))
+    var zonefile = `$ORIGIN ${env.name}
+$TTL 3600
+_https._tcp URI 10 1 "https://gaia.blockstack.org/hub/${ownerKey.getAddress()}/profile.json"
+`
+
+    blockstack.transactions.makeRenewal(env.name, env.dest, ownerKey.getHex(), paymentKeyHex, zonefile)
+    .then(transaction => {
+      console.log("renewing name to address =>", env.dest)
+      console.log("updating zonefile to:")
       console.log(zonefile)
       return blockstack.config.network.broadcastTransaction(transaction)
     }).catch((err) => {
@@ -93,7 +149,7 @@ _https._tcp URI 10 1 "https://gaia.blockstack.org/hub/${ownerKey.getAddress()}/p
       console.log(err)
       return
     }).then(txhash => {
-      console.log(`queueing zonefile to watch ${txhash}`)
+      console.log(`Watch transaction: https://explorer.blockstack.org/tx/${txhash}`)
       return blockstack.config.network.broadcastZoneFile(zonefile, txhash)
     })
     .then(() => {
